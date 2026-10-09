@@ -1,0 +1,988 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Draft Lottery Night</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800;900&family=Barlow:wght@400;500;600&family=Chivo+Mono:wght@500;700&display=swap">
+<style>
+/* Layout: stadium-at-night scoreboard. Lottery drum on the left, draft board on the right, setup below the drum. One committed dark look. */
+:root {
+  --turf: #0c3627;
+  --turf-stripe: #0f3e2d;
+  --panel: #0a2c20;
+  --chalk: #f2efe4;
+  --muted: #9dbbaa;
+  --line: rgba(242, 239, 228, 0.16);
+  --amber: #ffb52e;
+  --amber-ink: #2a1a00;
+  --alert: #ff7a66;
+  --font-display: "Big Shoulders Display", "Arial Narrow", Impact, sans-serif;
+  --font-body: "Barlow", "Segoe UI", system-ui, sans-serif;
+  --font-mono: "Chivo Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { min-height: 100%; }
+body {
+  margin: 0;
+  background-color: var(--turf);
+  background-image: repeating-linear-gradient(90deg, var(--turf) 0 72px, var(--turf-stripe) 72px 144px);
+  color: var(--chalk);
+  font: 400 15px/1.5 var(--font-body);
+  padding-inline: 16px;
+  padding-block: 28px 48px;
+}
+.wrap { max-width: 1120px; margin: 0 auto; display: grid; gap: 28px; }
+
+/* Header */
+header { display: grid; gap: 6px; }
+.eyebrow {
+  font: 700 12px/1 var(--font-mono);
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+h1 {
+  margin: 0;
+  font: 900 clamp(40px, 7vw, 76px)/0.92 var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
+.tagline { margin: 4px 0 0; color: var(--muted); max-width: 60ch; }
+
+/* Main grid */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "stage board" "setup board";
+  gap: 28px;
+  align-items: start;
+}
+.stage { grid-area: stage; display: grid; gap: 16px; min-width: 0; }
+.board-panel { grid-area: board; min-width: 0; }
+.setup { grid-area: setup; min-width: 0; }
+@media (max-width: 820px) {
+  .grid { grid-template-columns: minmax(0, 1fr); grid-template-areas: "stage" "board" "setup"; }
+}
+
+/* Drum */
+.drum-box { position: relative; width: 100%; max-width: 520px; margin: 0 auto; aspect-ratio: 24 / 25; }
+#drum { width: 100%; height: 100%; display: block; }
+
+.callout {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 14px;
+  min-height: 84px;
+  padding: 14px 18px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+.callout .ball-chip { width: 52px; height: 52px; font-size: 20px; }
+.callout .ball-chip[hidden] + .callout-text { grid-column: 1 / -1; }
+.callout-kicker {
+  font: 700 12px/1.2 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.callout-main {
+  font: 800 clamp(22px, 3.4vw, 32px)/1.05 var(--font-display);
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.callout.pop .callout-main { animation: pop 0.45s ease-out; }
+@keyframes pop { from { transform: scale(0.92); opacity: 0.2; } to { transform: none; opacity: 1; } }
+
+.ball-chip {
+  --c: #888;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  background: radial-gradient(circle at 34% 30%, rgba(255,255,255,0.55), transparent 42%), var(--c);
+  box-shadow: inset 0 -4px 8px rgba(0,0,0,0.35);
+  font: 900 13px/1 var(--font-display);
+  color: #10140f;
+  position: relative;
+}
+.ball-chip::before {
+  content: "";
+  position: absolute;
+  inset: 22%;
+  border-radius: 50%;
+  background: #fbfaf5;
+}
+.ball-chip span { position: relative; }
+
+/* Controls */
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.seg button {
+  font: 600 13px/1 var(--font-body);
+  padding: 10px 14px;
+  background: transparent;
+  color: var(--muted);
+  border: 0;
+  cursor: pointer;
+}
+.seg button[aria-pressed="true"] { background: var(--chalk); color: var(--turf); }
+.btn {
+  font: 800 17px/1 var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 13px 20px;
+  border-radius: 6px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--chalk);
+  cursor: pointer;
+}
+.btn:hover { border-color: var(--chalk); }
+.btn-primary { background: var(--amber); color: var(--amber-ink); border-color: var(--amber); }
+.btn-primary:hover { filter: brightness(1.08); border-color: var(--amber); }
+.btn:disabled, .seg button:disabled { opacity: 0.45; cursor: not-allowed; }
+.grow { flex: 1 1 auto; }
+button:focus-visible, input:focus-visible, textarea:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
+
+/* Board */
+.board-panel {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 18px;
+  display: grid;
+  gap: 14px;
+}
+.board-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; }
+h2 {
+  margin: 0;
+  font: 800 24px/1 var(--font-display);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+.board { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.slot {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+  perspective: 700px;
+}
+.slot-num {
+  display: grid;
+  place-items: center;
+  font: 700 18px/1 var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--amber);
+  background: #061d14;
+  border-radius: 4px;
+  text-shadow: 0 0 10px rgba(255, 181, 46, 0.45);
+}
+.slot-card {
+  position: relative;
+  min-height: 50px;
+  transform-style: preserve-3d;
+  transition: transform 0.7s cubic-bezier(.3,1.4,.5,1);
+}
+.face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+}
+.front {
+  border: 1px dashed var(--line);
+  color: var(--muted);
+  font: 700 14px/1 var(--font-mono);
+  letter-spacing: 0.1em;
+}
+.back {
+  background: var(--chalk);
+  color: var(--turf);
+  transform: rotateX(180deg);
+}
+.slot.revealed .slot-card { transform: rotateX(180deg); }
+.slot.top .back { background: var(--amber); color: var(--amber-ink); }
+.slot.fresh .back { box-shadow: 0 0 0 3px var(--amber); }
+.back .ball-chip { width: 34px; height: 34px; font-size: 12px; }
+.slot-text { min-width: 0; display: grid; gap: 1px; }
+.slot-name {
+  font: 800 19px/1.05 var(--font-display);
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.slot-more { font: 500 11px/1.2 var(--font-mono); opacity: 0.72; font-variant-numeric: tabular-nums; }
+
+.result-meta { font: 500 12px/1.5 var(--font-mono); color: var(--muted); overflow-wrap: anywhere; }
+.result-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.confirm {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--alert);
+  border-radius: 6px;
+}
+.confirm p { margin: 0; }
+
+/* Setup */
+.setup { display: grid; gap: 14px; }
+.field { display: grid; gap: 6px; }
+label, .label {
+  font: 700 12px/1 var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+input[type="text"], textarea {
+  width: 100%;
+  font: 500 15px/1.5 var(--font-body);
+  color: var(--chalk);
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+}
+textarea { min-height: 220px; resize: vertical; }
+input:disabled, textarea:disabled { opacity: 0.55; }
+.hint { margin: 0; font-size: 13px; color: var(--muted); }
+.hint strong { color: var(--chalk); font-weight: 600; }
+.error { margin: 0; color: var(--alert); font-weight: 600; }
+
+#confetti { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) {
+  .slot-card { transition: none; }
+  .callout.pop .callout-main { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow" id="season-label">Fantasy Football · Draft Lottery</div>
+    <h1 id="league-title">Sunday Funday League</h1>
+    <p class="tagline">Every team gets a ball. The air jets fire, and picks come out from last to first. The final two go head to head for the No. 1 pick.</p>
+  </header>
+
+  <div class="grid">
+    <section class="stage" aria-label="Lottery drum">
+      <div class="drum-box"><canvas id="drum" aria-hidden="true"></canvas></div>
+      <div class="callout" id="callout" aria-live="polite">
+        <span class="ball-chip" id="callout-chip" hidden><span></span></span>
+        <div class="callout-text">
+          <div class="callout-kicker" id="callout-kicker">Ready</div>
+          <div class="callout-main" id="callout-main">10 teams in the drum</div>
+        </div>
+      </div>
+      <div class="controls" id="controls">
+        <div class="seg" role="group" aria-label="Reveal speed">
+          <button type="button" id="speed-dramatic" aria-pressed="true">Dramatic</button>
+          <button type="button" id="speed-quick" aria-pressed="false">Quick</button>
+        </div>
+        <button type="button" class="btn" id="sound-btn" aria-pressed="true">Sound on</button>
+        <button type="button" class="btn btn-primary grow" id="start-btn">Start the lottery</button>
+        <button type="button" class="btn grow" id="skip-btn" hidden>Skip to results</button>
+      </div>
+    </section>
+
+    <section class="board-panel" aria-labelledby="board-title">
+      <div class="board-head">
+        <h2 id="board-title">Round 1 order</h2>
+        <div class="seg" role="group" aria-label="Draft format">
+          <button type="button" id="fmt-snake" aria-pressed="true">Snake</button>
+          <button type="button" id="fmt-linear" aria-pressed="false">Linear</button>
+        </div>
+      </div>
+      <ol class="board" id="board"></ol>
+      <div id="result-box" hidden>
+        <div class="result-actions">
+          <button type="button" class="btn btn-primary" id="copy-btn">Copy order</button>
+          <button type="button" class="btn" id="reset-btn">New draw</button>
+        </div>
+        <div class="confirm" id="confirm-box" hidden>
+          <p>Clear this order and start over? Your league will see a different result.</p>
+          <div class="result-actions">
+            <button type="button" class="btn" id="confirm-yes">Clear order</button>
+            <button type="button" class="btn" id="confirm-no">Keep it</button>
+          </div>
+        </div>
+        <textarea id="copy-fallback" class="sr-only" readonly tabindex="-1" aria-hidden="true"></textarea>
+      </div>
+      <p class="result-meta" id="result-meta"></p>
+    </section>
+
+    <section class="setup" aria-label="League setup">
+      <div class="field">
+        <label for="league-name">League name</label>
+        <input type="text" id="league-name" maxlength="60" value="Sunday Funday League">
+      </div>
+      <div class="field">
+        <label for="teams">Teams, one per line</label>
+        <textarea id="teams" spellcheck="false"></textarea>
+      </div>
+      <p class="hint" id="team-hint"><strong>Example league loaded.</strong> Replace these with your managers or team names.</p>
+      <p class="error" id="team-error" hidden></p>
+    </section>
+  </div>
+</div>
+<canvas id="confetti" aria-hidden="true"></canvas>
+
+<script>
+(() => {
+  const SAMPLE = [
+    "Mahomes Alone", "Bijan Mustard", "Purdy Little Liars", "Hurts So Good",
+    "Ja'Marr the Merrier", "CeeDee Dub", "Lamb Chops", "Waddle Waddle",
+    "Kamara Shy", "Taylor Made"
+  ];
+  const STORE_KEY = "draft-lottery-v1";
+  const SPEEDS = {
+    dramatic: { agitate: 1900, final: 4200, hold: 1500, exit: 900 },
+    quick:    { agitate: 550,  final: 1400, hold: 450,  exit: 500 }
+  };
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const $ = (id) => document.getElementById(id);
+  const el = {
+    title: $("league-title"), season: $("season-label"), league: $("league-name"), teams: $("teams"),
+    hint: $("team-hint"), error: $("team-error"), board: $("board"), start: $("start-btn"), skip: $("skip-btn"),
+    sound: $("sound-btn"), speedD: $("speed-dramatic"), speedQ: $("speed-quick"), snake: $("fmt-snake"),
+    linear: $("fmt-linear"), callout: $("callout"), chip: $("callout-chip"), kicker: $("callout-kicker"),
+    main: $("callout-main"), resultBox: $("result-box"), meta: $("result-meta"), copy: $("copy-btn"),
+    reset: $("reset-btn"), confirm: $("confirm-box"), yes: $("confirm-yes"), no: $("confirm-no"),
+    fallback: $("copy-fallback"), canvas: $("drum"), confetti: $("confetti")
+  };
+
+  const state = {
+    phase: "idle",            // idle | drawing | done
+    teams: [],
+    order: null,              // order[0] is pick 1
+    drawId: null,
+    drawnAt: null,
+    speed: "dramatic",
+    snake: true,
+    sound: true
+  };
+
+  // ---------- storage (per-browser convenience only) ----------
+  function save() {
+    try {
+      localStorage.setItem(STORE_KEY, JSON.stringify({
+        league: el.league.value, teams: el.teams.value, speed: state.speed, snake: state.snake,
+        sound: state.sound,
+        result: state.phase === "done" ? { order: state.order, drawId: state.drawId, drawnAt: state.drawnAt } : null
+      }));
+    } catch (e) { /* storage unavailable */ }
+  }
+  function load() {
+    try { return JSON.parse(localStorage.getItem(STORE_KEY) || "null"); } catch (e) { return null; }
+  }
+
+  // ---------- helpers ----------
+  const year = new Date().getFullYear();
+  const pad = (n) => String(n).padStart(2, "0");
+  const teamColor = (i) => `hsl(${(i * 137.508 + 8) % 360} 72% 52%)`;
+  function initials(name) {
+    const words = name.replace(/[^\p{L}\p{N}\s]/gu, "").trim().split(/\s+/).filter(Boolean);
+    if (!words.length) return name.slice(0, 2).toUpperCase();
+    if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+    return (words[0][0] + words[1][0]).toUpperCase();
+  }
+  function parseTeams() {
+    return el.teams.value.split("\n").map((s) => s.trim()).filter(Boolean);
+  }
+  function validate(teams) {
+    if (teams.length < 2) return "Add at least 2 teams to run a lottery.";
+    if (teams.length > 20) return `That's ${teams.length} teams. The drum holds up to 20.`;
+    const seen = new Set();
+    for (const t of teams) {
+      const k = t.toLowerCase();
+      if (seen.has(k)) return `"${t}" is listed twice. Give each team a unique name.`;
+      seen.add(k);
+    }
+    return null;
+  }
+  // Unbiased random integer in [0, n) from the browser's cryptographic RNG.
+  function randInt(n) {
+    const limit = Math.floor(0x100000000 / n) * n;
+    const buf = new Uint32Array(1);
+    let x;
+    do { crypto.getRandomValues(buf); x = buf[0]; } while (x >= limit);
+    return x % n;
+  }
+  function secureShuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = randInt(i + 1);
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  async function makeDrawId(order, ts) {
+    try {
+      const data = new TextEncoder().encode(JSON.stringify({ order, ts }));
+      const hash = new Uint8Array(await crypto.subtle.digest("SHA-256", data));
+      const hex = [...hash.slice(0, 4)].map((b) => b.toString(16).padStart(2, "0")).join("").toUpperCase();
+      return hex.slice(0, 4) + "-" + hex.slice(4);
+    } catch (e) {
+      const hex = Array.from({ length: 8 }, () => randInt(16).toString(16)).join("").toUpperCase();
+      return hex.slice(0, 4) + "-" + hex.slice(4);
+    }
+  }
+  function laterPicks(k, n) {
+    const r2 = state.snake ? 2 * n - k + 1 : n + k;
+    const r3 = 2 * n + k;
+    return `Rd 2: #${r2} · Rd 3: #${r3}`;
+  }
+  function colorFor(name) { return teamColor(state.teams.indexOf(name)); }
+
+  // ---------- skippable waits ----------
+  let skipping = false;
+  let waiters = [];
+  function wait(ms) {
+    if (skipping) return Promise.resolve();
+    return new Promise((res) => {
+      const t = setTimeout(done, ms);
+      function done() { clearTimeout(t); waiters = waiters.filter((w) => w !== done); res(); }
+      waiters.push(done);
+    });
+  }
+  function skipAll() { skipping = true; waiters.slice().forEach((w) => w()); }
+
+  // ---------- sound ----------
+  let actx = null;
+  function audio() {
+    if (!state.sound) return null;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      if (actx.state === "suspended") actx.resume();
+      return actx;
+    } catch (e) { return null; }
+  }
+  function tone(freq, dur, type = "sine", gain = 0.12, delay = 0) {
+    const ctx = audio();
+    if (!ctx || skipping) return;
+    const t = ctx.currentTime + delay;
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(freq, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(gain, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(ctx.destination);
+    o.start(t);
+    o.stop(t + dur + 0.02);
+  }
+  const sfx = {
+    clack: () => tone(1400 + Math.random() * 1400, 0.03, "square", 0.025),
+    reveal: () => { tone(196, 0.3, "triangle", 0.18); tone(294, 0.35, "triangle", 0.12, 0.06); },
+    fanfare: () => [523, 659, 784, 1047, 1319].forEach((f, i) => tone(f, i === 4 ? 0.9 : 0.22, "sawtooth", 0.07, i * 0.13))
+  };
+
+  // ---------- drum physics + rendering ----------
+  // World units: drum center (0,0), radius 1. View spans x [-1.2, 1.2], y [-1.15, 1.35].
+  const ctx = el.canvas.getContext("2d");
+  let balls = [];
+  let ballR = 0.17;
+  let agitation = 0, agitationTarget = 0, spin = 0, drumAngle = 0;
+  let view = { s: 1, cx: 0, cy: 0, dpr: 1 };
+
+  function resizeCanvas() {
+    const rect = el.canvas.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    el.canvas.width = Math.round(rect.width * dpr);
+    el.canvas.height = Math.round(rect.height * dpr);
+    const s = (rect.width * dpr) / 2.4;
+    view = { s, cx: rect.width * dpr / 2, cy: s * 1.15, dpr };
+  }
+  const X = (x) => view.cx + x * view.s;
+  const Y = (y) => view.cy + y * view.s;
+
+  function setBalls(teams) {
+    ballR = Math.min(0.2, 0.55 / Math.sqrt(Math.max(teams.length, 1)));
+    balls = teams.map((name, i) => {
+      const a = i * 2.39996, rr = 0.75 * Math.sqrt((i + 0.5) / teams.length);
+      return {
+        name, color: teamColor(i), label: initials(name),
+        x: Math.cos(a) * rr * 0.9, y: Math.sin(a) * rr * 0.5 + 0.3,
+        vx: 0, vy: 0, gone: false, anim: null
+      };
+    });
+  }
+
+  function physics(dt) {
+    const live = balls.filter((b) => !b.gone && !b.anim);
+    const r = ballR;
+    for (const b of live) {
+      b.vy += 3.2 * dt;
+      if (agitation > 0.02) {
+        if (b.y > 0.15) b.vy -= agitation * (10 + Math.random() * 12) * dt;
+        b.vx += (Math.random() - 0.5) * agitation * 22 * dt;
+        const d = Math.hypot(b.x, b.y) || 1;
+        b.vx += (-b.y / d) * agitation * 3 * dt;
+        b.vy += (b.x / d) * agitation * 3 * dt;
+      }
+      const damp = 1 - 0.35 * dt;
+      b.vx *= damp; b.vy *= damp;
+      b.x += b.vx * dt; b.y += b.vy * dt;
+    }
+    for (let pass = 0; pass < 3; pass++) {
+      for (let i = 0; i < live.length; i++) {
+        for (let j = i + 1; j < live.length; j++) {
+          const a = live[i], b = live[j];
+          const dx = a.x - b.x, dy = a.y - b.y;
+          const d = Math.hypot(dx, dy);
+          if (d > 0 && d < 2 * r) {
+            const nx = dx / d, ny = dy / d, push = (2 * r - d) / 2;
+            a.x += nx * push; a.y += ny * push;
+            b.x -= nx * push; b.y -= ny * push;
+            const vn = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+            if (vn < 0) {
+              const imp = -0.9 * vn;
+              a.vx += nx * imp; a.vy += ny * imp;
+              b.vx -= nx * imp; b.vy -= ny * imp;
+              if (agitation > 0.4 && Math.random() < 0.04) sfx.clack();
+            }
+          }
+        }
+      }
+      for (const b of live) {
+        const d = Math.hypot(b.x, b.y), lim = 1 - r - 0.02;
+        if (d > lim) {
+          const nx = b.x / d, ny = b.y / d;
+          b.x = nx * lim; b.y = ny * lim;
+          const vn = b.vx * nx + b.vy * ny;
+          if (vn > 0) { b.vx -= 1.6 * vn * nx; b.vy -= 1.6 * vn * ny; }
+          const tx = -ny, ty = nx, vt = b.vx * tx + b.vy * ty;
+          const pull = (spin - vt) * 0.08;
+          b.vx += tx * pull; b.vy += ty * pull;
+        }
+      }
+    }
+  }
+
+  function drawBall(b, x, y, r) {
+    const px = X(x), py = Y(y), pr = r * view.s;
+    ctx.save();
+    ctx.shadowColor = "rgba(0,0,0,0.35)";
+    ctx.shadowBlur = pr * 0.4;
+    ctx.shadowOffsetY = pr * 0.15;
+    const g = ctx.createRadialGradient(px - pr * 0.35, py - pr * 0.4, pr * 0.1, px, py, pr);
+    g.addColorStop(0, "rgba(255,255,255,0.95)");
+    g.addColorStop(0.25, b.color);
+    g.addColorStop(1, "rgba(0,0,0,0.55)");
+    ctx.fillStyle = b.color;
+    ctx.beginPath(); ctx.arc(px, py, pr, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowColor = "transparent";
+    ctx.fillStyle = g;
+    ctx.globalAlpha = 0.55;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = "#fbfaf5";
+    ctx.beginPath(); ctx.arc(px, py, pr * 0.56, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#10140f";
+    ctx.font = `900 ${Math.round(pr * 0.62)}px "Big Shoulders Display", Impact, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(b.label, px, py + pr * 0.04);
+    ctx.restore();
+  }
+
+  function render(now) {
+    const W = el.canvas.width, H = el.canvas.height, s = view.s;
+    ctx.clearRect(0, 0, W, H);
+
+    // stand + chute
+    ctx.fillStyle = "#06251a";
+    ctx.beginPath();
+    ctx.moveTo(X(-0.55), Y(1.35)); ctx.lineTo(X(-0.22), Y(0.9)); ctx.lineTo(X(0.22), Y(0.9)); ctx.lineTo(X(0.55), Y(1.35));
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = "#020f0a";
+    ctx.fillRect(X(-0.13), Y(0.94), 0.26 * s, 0.42 * s);
+
+    // glass
+    const glass = ctx.createRadialGradient(X(-0.3), Y(-0.4), s * 0.1, X(0), Y(0), s);
+    glass.addColorStop(0, "rgba(242,239,228,0.14)");
+    glass.addColorStop(1, "rgba(242,239,228,0.03)");
+    ctx.fillStyle = glass;
+    ctx.beginPath(); ctx.arc(X(0), Y(0), s, 0, Math.PI * 2); ctx.fill();
+
+    // spinning spokes
+    ctx.strokeStyle = "rgba(242,239,228,0.10)";
+    ctx.lineWidth = Math.max(1, s * 0.012);
+    for (let k = 0; k < 3; k++) {
+      const a = drumAngle + (k * Math.PI) / 3;
+      ctx.beginPath();
+      ctx.moveTo(X(Math.cos(a) * 0.96), Y(Math.sin(a) * 0.96));
+      ctx.lineTo(X(-Math.cos(a) * 0.96), Y(-Math.sin(a) * 0.96));
+      ctx.stroke();
+    }
+
+    // air jet glow while agitating
+    if (agitation > 0.05) {
+      const jet = ctx.createRadialGradient(X(0), Y(0.95), 0, X(0), Y(0.95), s * 0.9);
+      jet.addColorStop(0, `rgba(255,181,46,${0.22 * agitation})`);
+      jet.addColorStop(1, "rgba(255,181,46,0)");
+      ctx.fillStyle = jet;
+      ctx.beginPath(); ctx.arc(X(0), Y(0), s, 0, Math.PI * 2); ctx.fill();
+    }
+
+    for (const b of balls) if (!b.gone && !b.anim) drawBall(b, b.x, b.y, ballR);
+
+    // rim + dial ticks
+    ctx.strokeStyle = "rgba(242,239,228,0.85)";
+    ctx.lineWidth = s * 0.03;
+    ctx.beginPath(); ctx.arc(X(0), Y(0), s * 1.0, 0, Math.PI * 2); ctx.stroke();
+    ctx.strokeStyle = "rgba(255,181,46,0.8)";
+    ctx.lineWidth = Math.max(1, s * 0.01);
+    for (let k = 0; k < 40; k++) {
+      const a = (k / 40) * Math.PI * 2 - drumAngle * 0.25;
+      const r1 = k % 5 === 0 ? 1.04 : 1.03, r2 = 1.08;
+      ctx.beginPath();
+      ctx.moveTo(X(Math.cos(a) * r1), Y(Math.sin(a) * r1));
+      ctx.lineTo(X(Math.cos(a) * r2), Y(Math.sin(a) * r2));
+      ctx.stroke();
+    }
+    ctx.strokeStyle = "rgba(255,255,255,0.35)";
+    ctx.lineWidth = s * 0.018;
+    ctx.beginPath(); ctx.arc(X(0), Y(0), s * 0.9, Math.PI * 1.1, Math.PI * 1.45); ctx.stroke();
+
+    // ball travelling out the chute
+    for (const b of balls) {
+      if (!b.anim || b.gone) continue;
+      const t = Math.min(1, (now - b.anim.start) / b.anim.dur);
+      let x, y, r = ballR;
+      if (t < 0.5) {
+        const u = t / 0.5, e = 1 - Math.pow(1 - u, 3);
+        x = b.anim.x0 + (0 - b.anim.x0) * e;
+        y = b.anim.y0 + (0.86 - b.anim.y0) * e;
+      } else {
+        const u = (t - 0.5) / 0.5, e = u * u;
+        x = 0; y = 0.86 + 0.6 * e; r = ballR * (1 + 0.25 * e);
+      }
+      drawBall(b, x, y, r);
+      if (t >= 1) b.gone = true;
+    }
+  }
+
+  let last = performance.now(), clackTimer = 0;
+  function loop(now) {
+    const dt = Math.min(0.033, (now - last) / 1000);
+    last = now;
+    agitation += (agitationTarget - agitation) * Math.min(1, dt * 4);
+    spin += ((agitationTarget > 0 ? 6 : 0.25) - spin) * Math.min(1, dt * 1.5);
+    drumAngle += spin * dt * 0.5;
+    const steps = 2;
+    for (let i = 0; i < steps; i++) physics(dt / steps);
+    clackTimer -= dt;
+    if (agitation > 0.5 && clackTimer <= 0) { sfx.clack(); clackTimer = 0.05 + Math.random() * 0.09; }
+    render(now);
+    requestAnimationFrame(loop);
+  }
+
+  async function agitate(ms) {
+    agitationTarget = reduceMotion ? 0.5 : 1;
+    await wait(ms);
+    agitationTarget = 0;
+  }
+  async function pullBall(name, ms) {
+    const b = balls.find((x) => x.name === name && !x.gone);
+    if (!b) return;
+    if (skipping) { b.gone = true; return; }
+    b.anim = { start: performance.now(), dur: ms, x0: b.x, y0: b.y };
+    await wait(ms);
+    b.gone = true;
+  }
+
+  // ---------- board ----------
+  function buildBoard(n) {
+    el.board.innerHTML = "";
+    for (let k = 1; k <= n; k++) {
+      const li = document.createElement("li");
+      li.className = "slot";
+      li.dataset.pick = k;
+      li.innerHTML = `
+        <span class="slot-num">${pad(k)}</span>
+        <div class="slot-card">
+          <div class="face front">PICK ${pad(k)} · ???</div>
+          <div class="face back">
+            <span class="ball-chip"><span></span></span>
+            <div class="slot-text"><span class="slot-name"></span><span class="slot-more"></span></div>
+          </div>
+        </div>`;
+      el.board.appendChild(li);
+    }
+  }
+  function revealSlot(k, name, fresh = true) {
+    const li = el.board.querySelector(`[data-pick="${k}"]`);
+    if (!li) return;
+    const chip = li.querySelector(".ball-chip");
+    chip.style.setProperty("--c", colorFor(name));
+    chip.firstElementChild.textContent = initials(name);
+    li.querySelector(".slot-name").textContent = name;
+    li.querySelector(".slot-name").title = name;
+    li.querySelector(".slot-more").textContent = laterPicks(k, state.teams.length);
+    el.board.querySelectorAll(".fresh").forEach((x) => x.classList.remove("fresh"));
+    li.classList.add("revealed");
+    if (fresh) li.classList.add("fresh");
+    if (k === 1) li.classList.add("top");
+  }
+  function refreshLaterPicks() {
+    el.board.querySelectorAll(".slot.revealed").forEach((li) => {
+      li.querySelector(".slot-more").textContent = laterPicks(+li.dataset.pick, state.teams.length);
+    });
+  }
+
+  function setCallout(kicker, main, name) {
+    el.kicker.textContent = kicker;
+    el.main.textContent = main;
+    if (name) {
+      el.chip.hidden = false;
+      el.chip.style.setProperty("--c", colorFor(name));
+      el.chip.firstElementChild.textContent = initials(name);
+    } else {
+      el.chip.hidden = true;
+    }
+    el.callout.classList.remove("pop");
+    void el.callout.offsetWidth;
+    el.callout.classList.add("pop");
+  }
+
+  // ---------- confetti ----------
+  function confetti(colors) {
+    if (reduceMotion) return;
+    const c = el.confetti, cx = c.getContext("2d");
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    c.width = innerWidth * dpr; c.height = innerHeight * dpr;
+    const parts = Array.from({ length: 180 }, () => ({
+      x: c.width * (0.2 + Math.random() * 0.6), y: c.height * 0.35,
+      vx: (Math.random() - 0.5) * 18 * dpr, vy: (-8 - Math.random() * 14) * dpr,
+      w: (6 + Math.random() * 6) * dpr, h: (10 + Math.random() * 8) * dpr,
+      rot: Math.random() * 6, vr: (Math.random() - 0.5) * 0.4,
+      color: colors[Math.floor(Math.random() * colors.length)]
+    }));
+    const t0 = performance.now();
+    (function frame(now) {
+      cx.clearRect(0, 0, c.width, c.height);
+      const alive = now - t0 < 4200;
+      for (const p of parts) {
+        p.vy += 0.42 * dpr; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.rot += p.vr;
+        cx.save(); cx.translate(p.x, p.y); cx.rotate(p.rot);
+        cx.fillStyle = p.color; cx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h * Math.abs(Math.cos(p.rot * 1.7)));
+        cx.restore();
+      }
+      if (alive) requestAnimationFrame(frame); else cx.clearRect(0, 0, c.width, c.height);
+    })(t0);
+  }
+
+  // ---------- UI state ----------
+  function syncControls() {
+    const drawing = state.phase === "drawing", done = state.phase === "done";
+    el.start.hidden = drawing || done;
+    el.skip.hidden = !drawing;
+    el.teams.disabled = drawing || done;
+    el.league.disabled = drawing;
+    el.speedD.disabled = el.speedQ.disabled = drawing || done;
+    el.resultBox.hidden = !done;
+    if (!done) el.confirm.hidden = true;
+    el.speedD.setAttribute("aria-pressed", state.speed === "dramatic");
+    el.speedQ.setAttribute("aria-pressed", state.speed === "quick");
+    el.snake.setAttribute("aria-pressed", state.snake);
+    el.linear.setAttribute("aria-pressed", !state.snake);
+    el.sound.setAttribute("aria-pressed", state.sound);
+    el.sound.textContent = state.sound ? "Sound on" : "Sound off";
+    el.hint.innerHTML = done
+      ? "Teams are locked while an order is on the board. Choose <strong>New draw</strong> to edit them."
+      : sameAsSample()
+        ? "<strong>Example league loaded.</strong> Replace these with your managers or team names."
+        : `${parseTeams().length} teams ready. Lottery balls are labeled with each team's initials.`;
+  }
+  function sameAsSample() { return parseTeams().join("\n") === SAMPLE.join("\n"); }
+  function syncTitle() {
+    const name = el.league.value.trim() || "Your League";
+    el.title.textContent = name;
+    el.season.textContent = `Fantasy Football · ${year} Draft Lottery`;
+  }
+  function formatTime(ts) {
+    return new Date(ts).toLocaleString(undefined, { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  }
+  function setMeta() {
+    el.meta.textContent = state.phase === "done"
+      ? `Draw ID ${state.drawId} · ${formatTime(state.drawnAt)} · Shuffled with the browser's cryptographic RNG`
+      : "";
+  }
+
+  function idleFromTeams() {
+    const teams = parseTeams();
+    const err = validate(teams);
+    el.error.hidden = !err;
+    el.error.textContent = err || "";
+    el.start.disabled = !!err;
+    state.teams = teams;
+    if (teams.length <= 20) {
+      setBalls(teams);
+      buildBoard(teams.length);
+    }
+    setCallout("Ready", `${teams.length} ${teams.length === 1 ? "team" : "teams"} in the drum`);
+    syncControls();
+  }
+
+  async function runDraw() {
+    const teams = parseTeams();
+    const err = validate(teams);
+    if (err) { el.error.hidden = false; el.error.textContent = err; return; }
+    audio();
+    state.teams = teams;
+    state.order = secureShuffle(teams);
+    state.drawnAt = Date.now();
+    state.drawId = await makeDrawId(state.order, state.drawnAt);
+    state.phase = "drawing";
+    skipping = false;
+    setBalls(teams);
+    buildBoard(teams.length);
+    syncControls();
+    setMeta();
+
+    const sp = SPEEDS[state.speed];
+    const n = teams.length;
+
+    setCallout("Air jets on", "Mixing the balls…");
+    await agitate(sp.agitate * 1.2);
+    await wait(250);
+
+    for (let k = n; k >= 3; k--) {
+      const name = state.order[k - 1];
+      setCallout(`Pick ${k} of ${n}`, "Drawing…");
+      await agitate(sp.agitate);
+      await pullBall(name, sp.exit);
+      setCallout(`Pick ${k}`, name, name);
+      revealSlot(k, name);
+      sfx.reveal();
+      await wait(sp.hold);
+    }
+
+    // Final two: the drawn ball wins the No. 1 pick.
+    const first = state.order[0], second = state.order[1];
+    setCallout("Final two", `${first} vs ${second}`);
+    await wait(sp.hold);
+    setCallout("For the No. 1 overall pick", "The next ball out picks first…");
+    await agitate(sp.final);
+    await pullBall(first, sp.exit * 1.3);
+    revealSlot(2, second, false);
+    revealSlot(1, first);
+    setCallout("No. 1 overall pick", first, first);
+    sfx.fanfare();
+    if (!skipping) confetti([colorFor(first), "#ffb52e", "#f2efe4", colorFor(second)]);
+    balls.forEach((b) => { b.gone = true; });
+    agitationTarget = 0;
+
+    state.phase = "done";
+    skipping = false;
+    syncControls();
+    setMeta();
+    save();
+  }
+
+  function restoreResult(result) {
+    state.order = result.order;
+    state.drawId = result.drawId;
+    state.drawnAt = result.drawnAt;
+    state.teams = parseTeams();
+    state.phase = "done";
+    balls = [];
+    buildBoard(state.order.length);
+    state.order.forEach((name, i) => revealSlot(i + 1, name, false));
+    setCallout("Order locked in", `${state.order[0]} picks first`, state.order[0]);
+    syncControls();
+    setMeta();
+  }
+
+  function orderText() {
+    const lines = state.order.map((name, i) => `${i + 1}. ${name}`);
+    return [
+      `${el.league.value.trim() || "Our League"} · ${year} Draft Order (${state.snake ? "snake" : "linear"})`,
+      ...lines,
+      `Draw ID ${state.drawId} · ${formatTime(state.drawnAt)}`
+    ].join("\n");
+  }
+
+  // ---------- events ----------
+  el.start.addEventListener("click", runDraw);
+  el.skip.addEventListener("click", () => { skipAll(); el.skip.disabled = true; setTimeout(() => { el.skip.disabled = false; }, 400); });
+  el.speedD.addEventListener("click", () => { state.speed = "dramatic"; syncControls(); save(); });
+  el.speedQ.addEventListener("click", () => { state.speed = "quick"; syncControls(); save(); });
+  el.sound.addEventListener("click", () => { state.sound = !state.sound; if (state.sound) audio(); syncControls(); save(); });
+  el.snake.addEventListener("click", () => { state.snake = true; refreshLaterPicks(); syncControls(); save(); });
+  el.linear.addEventListener("click", () => { state.snake = false; refreshLaterPicks(); syncControls(); save(); });
+  el.league.addEventListener("input", () => { syncTitle(); save(); });
+  let editTimer;
+  el.teams.addEventListener("input", () => {
+    clearTimeout(editTimer);
+    editTimer = setTimeout(() => { idleFromTeams(); save(); }, 250);
+  });
+  el.copy.addEventListener("click", () => {
+    const text = orderText();
+    const ok = () => { el.copy.textContent = "Copied"; setTimeout(() => { el.copy.textContent = "Copy order"; }, 1600); };
+    const fallback = () => {
+      el.fallback.value = text;
+      el.fallback.classList.remove("sr-only");
+      el.fallback.removeAttribute("aria-hidden");
+      el.fallback.style.minHeight = "160px";
+      el.fallback.select();
+      el.copy.textContent = "Press Ctrl+C / ⌘C";
+    };
+    try { navigator.clipboard.writeText(text).then(ok, fallback); } catch (e) { fallback(); }
+  });
+  el.reset.addEventListener("click", () => { el.confirm.hidden = false; el.yes.focus(); });
+  el.no.addEventListener("click", () => { el.confirm.hidden = true; });
+  el.yes.addEventListener("click", () => {
+    state.phase = "idle";
+    state.order = null;
+    el.fallback.classList.add("sr-only");
+    el.fallback.setAttribute("aria-hidden", "true");
+    el.fallback.style.minHeight = "";
+    setMeta();
+    idleFromTeams();
+    save();
+  });
+  window.addEventListener("resize", resizeCanvas);
+
+  // ---------- boot ----------
+  const saved = load();
+  el.teams.value = saved && saved.teams ? saved.teams : SAMPLE.join("\n");
+  if (saved && typeof saved.league === "string") el.league.value = saved.league;
+  if (saved) {
+    state.speed = saved.speed === "quick" ? "quick" : "dramatic";
+    state.snake = saved.snake !== false;
+    state.sound = saved.sound !== false;
+  }
+  syncTitle();
+  resizeCanvas();
+  if (saved && saved.result && Array.isArray(saved.result.order) && saved.result.order.length) {
+    restoreResult(saved.result);
+  } else {
+    idleFromTeams();
+  }
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => render(performance.now()));
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
